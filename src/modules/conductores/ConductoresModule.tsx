@@ -840,18 +840,34 @@ export function ConductoresModule() {
 
     if (!selectedConductor) return;
 
-    // Validar CUIT obligatorio
+    // Validaciones obligatorias
     const newErrors: Record<string, string> = {};
     if (!formData.numero_cuit?.trim()) {
       newErrors.numero_cuit = 'Requerido para facturación';
     }
-    
+
+    // Validar campos de baja si el estado seleccionado es "baja"
+    const bajaEstado = estadosConductor.find(e => e.codigo?.toLowerCase() === 'baja');
+    const isEstadoBaja = bajaEstado && formData.estado_id === bajaEstado.id;
+    if (isEstadoBaja) {
+      if (!formData.fecha_terminacion?.trim()) {
+        newErrors.fecha_terminacion = 'Obligatorio cuando el estado es Baja';
+      }
+      if (!formData.motivo_baja?.trim()) {
+        newErrors.motivo_baja = 'Obligatorio cuando el estado es Baja';
+      }
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setEditErrors(newErrors);
+      const mensajes: string[] = [];
+      if (newErrors.numero_cuit) mensajes.push('CUIT');
+      if (newErrors.fecha_terminacion) mensajes.push('Fecha de Terminación');
+      if (newErrors.motivo_baja) mensajes.push('Motivo de Baja');
       Swal.fire({
         icon: "warning",
-        title: "CUIT requerido",
-        text: "El CUIT es obligatorio para la facturación mensual",
+        title: "Campos obligatorios",
+        text: `Completar: ${mensajes.join(', ')}`,
         confirmButtonColor: "#ff0033",
       });
       return;
@@ -2963,7 +2979,7 @@ function ModalEditar({
                     setFormData({ ...formData, fecha_terminacion: e.target.value })
                   }
                   disabled={saving}
-                  style={{ borderColor: '#ff0033' }}
+                  style={editErrors.fecha_terminacion ? { borderColor: '#ff0033' } : undefined}
                 />
               </div>
             </div>
@@ -2979,7 +2995,7 @@ function ModalEditar({
                   disabled={saving}
                   placeholder="Describa el motivo de la baja..."
                   rows={3}
-                  style={{ borderColor: '#ff0033', resize: 'vertical' }}
+                  style={editErrors.motivo_baja ? { borderColor: '#ff0033', resize: 'vertical' } : { resize: 'vertical' }}
                 />
               </div>
             </div>
